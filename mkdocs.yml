@@ -1,7 +1,7 @@
 site_name: Rago Meditation App
-site_url: https://bytefield.github.io/rago_enterprises/
-repo_url: https://github.com/Bytefield/rago_enterprises
-repo_name: Bytefield/rago_enterprises
+site_url: https://bytefield.github.io/meditation_app_flutter/
+repo_url: https://github.com/Bytefield/meditation_app_flutter
+repo_name: Bytefield/meditation_app_flutter
 
 theme:
   name: material
