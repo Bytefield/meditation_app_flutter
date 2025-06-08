@@ -1,0 +1,140 @@
+name: Deploy Documentation to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/gh-pages.yml'
+      - '.github/wiki/**'
+      - 'docs/**'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install MkDocs and Material for MkDocs
+        run: |
+          pip install mkdocs-material mkdocs-redirects
+
+      - name: Create docs directory if it doesn't exist
+        run: mkdir -p docs
+
+      - name: Copy wiki content to docs directory
+        run: |
+          cp -r .github/wiki/* docs/
+          # Create a simple mkdocs.yml if it doesn't exist
+          if [ ! -f mkdocs.yml ]; then
+            cat > mkdocs.yml <<EOL
+            site_name: Rago Meditation App
+            site_url: https://bytefield.github.io/rago_enterprises/
+            repo_url: https://github.com/Bytefield/rago_enterprises
+            repo_name: Bytefield/rago_enterprises
+            
+            theme:
+              name: material
+              features:
+                - navigation.tabs
+                - navigation.indexes
+                - navigation.sections
+                - navigation.top
+                - toc.integrate
+                - search.suggest
+                - search.highlight
+              palette:
+                - media: "(prefers-color-scheme: light)"
+                  scheme: default
+                  primary: indigo
+                  accent: indigo
+                  toggle:
+                    icon: material/weather-sunny
+                    name: Switch to dark mode
+                - media: "(prefers-color-scheme: dark)"
+                  scheme: slate
+                  primary: indigo
+                  accent: indigo
+                  toggle:
+                    icon: material/weather-night
+                    name: Switch to light mode
+            
+            markdown_extensions:
+              - pymdownx.highlight:
+                  anchor_linenums: true
+              - pymdownx.inlinehilite
+              - pymdownx.superfences:
+                  custom_fences:
+                    - name: mermaid
+                      class: mermaid
+                      format: !!python/name:pymdownx.superfences.fence_code_format
+            
+            plugins:
+              - search
+              - redirects:
+                  redirect_maps:
+                    'index.md': 'Home.md'
+            
+            nav:
+              - Home: 'Home.md'
+              - Getting Started:
+                  - 'Getting Started/Installation.md'
+                  - 'Getting Started/Configuration.md'
+                  - 'Getting Started/Development-Setup.md'
+              - API Documentation:
+                  - 'API/Authentication.md'
+                  - 'API/Meditation-Sessions.md'
+                  - 'API/Users.md'
+              - Architecture:
+                  - 'Architecture/Overview.md'
+              - Development:
+                  - 'Development/Guide.md'
+              - Contributing:
+                  - 'Contributing/How-to-Contribute.md'
+                  - 'Contributing/Pull-Request-Process.md'
+                  - 'Contributing/Code-Review-Guidelines.md'
+            
+            extra_css:
+              - stylesheets/extra.css
+            
+            extra_javascript:
+              - javascripts/mathjax.js
+              - https://polyfill.io/v3/polyfill.min.js?features=es6
+              - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+            EOL
+          fi
+
+      - name: Build site
+        run: mkdocs build --site-dir public
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
