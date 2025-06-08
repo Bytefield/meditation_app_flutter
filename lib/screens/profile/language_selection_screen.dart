@@ -14,6 +14,7 @@ class LanguageSelectionScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
 
+    // Only include supported languages (English and Spanish)
     final languages = [
       _Language(
         name: l10n.spanish,
@@ -27,30 +28,31 @@ class LanguageSelectionScreen extends StatelessWidget {
         flag: '🇬🇧',
         languageCode: 'en',
       ),
-      _Language(
-        name: l10n.french,
-        locale: const Locale('fr'),
-        flag: '🇫🇷',
-        languageCode: 'fr',
-      ),
-      _Language(
-        name: l10n.german,
-        locale: const Locale('de'),
-        flag: '🇩🇪',
-        languageCode: 'de',
-      ),
-      _Language(
-        name: l10n.italian,
-        locale: const Locale('it'),
-        flag: '🇮🇹',
-        languageCode: 'it',
-      ),
-      _Language(
-        name: l10n.portuguese,
-        locale: const Locale('pt'),
-        flag: '🇵🇹',
-        languageCode: 'pt',
-      ),
+      // Note: Other languages are commented out as translations are not yet available
+      // _Language(
+      //   name: l10n.french,
+      //   locale: const Locale('fr'),
+      //   flag: '🇫🇷',
+      //   languageCode: 'fr',
+      // ),
+      // _Language(
+      //   name: l10n.german,
+      //   locale: const Locale('de'),
+      //   flag: '🇩🇪',
+      //   languageCode: 'de',
+      // ),
+      // _Language(
+      //   name: l10n.italian,
+      //   locale: const Locale('it'),
+      //   flag: '🇮🇹',
+      //   languageCode: 'it',
+      // ),
+      // _Language(
+      //   name: l10n.portuguese,
+      //   locale: const Locale('pt'),
+      //   flag: '🇵🇹',
+      //   languageCode: 'pt',
+      // ),
     ];
 
     return Scaffold(

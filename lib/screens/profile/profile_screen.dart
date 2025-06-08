@@ -181,18 +181,19 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         Consumer<LocaleProvider>(
                           builder: (context, localeProvider, _) {
+                            // Only show supported languages (English and Spanish)
+                            final languageCode = localeProvider.locale.languageCode;
+                            String languageName;
+                            
+                            if (languageCode == 'es') {
+                              languageName = l10n.spanish;
+                            } else {
+                              // Default to English if the language is not Spanish
+                              languageName = l10n.english;
+                            }
+                            
                             return Text(
-                              localeProvider.locale.languageCode == 'es'
-                                  ? l10n.spanish
-                                  : localeProvider.locale.languageCode == 'en'
-                                      ? l10n.english
-                                      : localeProvider.locale.languageCode == 'fr'
-                                          ? l10n.french
-                                          : localeProvider.locale.languageCode == 'de'
-                                              ? l10n.german
-                                              : localeProvider.locale.languageCode == 'it'
-                                                  ? l10n.italian
-                                                  : l10n.portuguese,
+                              languageName,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                               ),

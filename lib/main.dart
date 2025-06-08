@@ -55,10 +55,11 @@ class MeditationApp extends StatelessWidget {
       supportedLocales: const [
         Locale('es'), // Spanish
         Locale('en'), // English
-        Locale('fr'), // French
-        Locale('de'), // German
-        Locale('it'), // Italian
-        Locale('pt'), // Portuguese
+        // Note: French, German, Italian, and Portuguese are commented out as translations are not yet available
+        // Locale('fr'), // French
+        // Locale('de'), // German
+        // Locale('it'), // Italian
+        // Locale('pt'), // Portuguese
       ],
       initialRoute: '/',
       routes: {
