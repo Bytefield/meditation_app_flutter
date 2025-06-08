@@ -38,5 +38,13 @@
   "account": "Account",
   "app": "App",
   "guest": "Guest",
-  "guestEmail": "guest@example.com"
+  "guestEmail": "guest@example.com",
+  "profileImageUpdated": "Profile image updated successfully",
+  "errorUpdatingImage": "Error updating profile image. Please try again.",
+  "uploadingImage": "Uploading image...",
+  "selectImageSource": "Select Image Source",
+  "camera": "Camera",
+  "gallery": "Gallery",
+  "cancel": "Cancel",
+  "retry": "Retry"
 }

@@ -28,10 +28,15 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _user = await _authService.getCurrentUser();
-      _isInitialized = true;
+      final response = await _authService.getCurrentUser();
+      if (response['success'] == true) {
+        _user = response['user'] as User?;
+        _isInitialized = true;
+      } else {
+        _error = response['message'] ?? 'Failed to initialize user session';
+      }
     } catch (e) {
-      _error = 'Error initializing authentication';
+      _error = 'Error initializing authentication: ${e.toString()}';
       if (kDebugMode) {
         print('AuthProvider - initialize error: $e');
       }
@@ -52,13 +57,17 @@ class AuthProvider with ChangeNotifier {
     try {
       final isAuth = await _authService.isAuthenticated();
       if (isAuth) {
-        _user = await _authService.getCurrentUser();
-        notifyListeners();
+        final response = await _authService.getCurrentUser();
+        if (response['success'] == true) {
+          _user = response['user'] as User?;
+          notifyListeners();
+          return _user != null;
+        }
       }
-      return isAuth;
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        print('AuthProvider - isAuthenticated error: $e');
+        print('AuthProvider - checkAuthentication error: $e');
       }
       return false;
     }
@@ -186,6 +195,47 @@ class AuthProvider with ChangeNotifier {
     if (_user == null) return null;
     // If you need to store and retrieve a token separately, implement this
     return null;
+  }
+  
+  /// Updates the user's profile image
+  /// Returns true if the update was successful, false otherwise
+  Future<bool> updateProfileImage(String imagePath) async {
+    if (_isLoading) return false;
+    
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await _authService.updateProfileImage(imagePath);
+      
+      if (result['success'] == true && result['imageUrl'] != null) {
+        // Update the current user with the new image URL
+        if (_user != null) {
+          _user = _user!.copyWith(profileImageUrl: result['imageUrl']);
+          notifyListeners();
+          return true;
+        }
+        _error = 'User not found';
+        return false;
+      } else {
+        _error = result['message'] ?? 'Failed to update profile image';
+        if (kDebugMode) {
+          print('Error updating profile image: ${result['message']}');
+        }
+        return false;
+      }
+    } catch (e, stackTrace) {
+      _error = 'Error updating profile image: ${e.toString().split('.').first}';
+      if (kDebugMode) {
+        print('Error updating profile image: $e');
+        print('Stack trace: $stackTrace');
+      }
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
   
   // Update user profile

@@ -124,4 +124,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guestEmail => 'guest@example.com';
+
+  @override
+  String get profileImageUpdated => 'Profile image updated successfully';
+
+  @override
+  String get errorUpdatingImage =>
+      'Error updating profile image. Please try again.';
+
+  @override
+  String get uploadingImage => 'Uploading image...';
+
+  @override
+  String get selectImageSource => 'Select Image Source';
+
+  @override
+  String get camera => 'Camera';
+
+  @override
+  String get gallery => 'Gallery';
+
+  @override
+  String get retry => 'Retry';
 }

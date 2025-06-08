@@ -331,6 +331,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'guest@example.com'**
   String get guestEmail;
+
+  /// No description provided for @profileImageUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile image updated successfully'**
+  String get profileImageUpdated;
+
+  /// No description provided for @errorUpdatingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Error updating profile image. Please try again.'**
+  String get errorUpdatingImage;
+
+  /// No description provided for @uploadingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading image...'**
+  String get uploadingImage;
+
+  /// No description provided for @selectImageSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Image Source'**
+  String get selectImageSource;
+
+  /// No description provided for @camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get camera;
+
+  /// No description provided for @gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get gallery;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
 }
 
 class _AppLocalizationsDelegate

@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:meditation_app_flutter/models/user_model.dart';
 import 'package:meditation_app_flutter/config/config.dart';
@@ -144,22 +147,102 @@ class AuthService {
     }
   }
 
-  // Get current user
-  Future<User?> getCurrentUser() async {
+  // Get current user profile
+  Future<Map<String, dynamic>> getCurrentUser() async {
     try {
       final response = await _httpClient.get('/api/auth/profile');
-
+      
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
         final user = User.fromJson(userData);
         await _saveUserData(user);
-        return user;
+        return {'success': true, 'user': user};
       } else {
-        await clearAuthData();
-        return null;
+        return {'success': false, 'message': 'Failed to fetch user data'};
       }
     } catch (e) {
-      return null;
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  /// Updates the user's profile image by uploading the image file to the server
+  /// 
+  /// [imagePath] - The local file path of the image to upload
+  /// Returns a map with 'success' status and either 'imageUrl' or 'message'
+  Future<Map<String, dynamic>> updateProfileImage(String imagePath) async {
+    try {
+      final file = File(imagePath);
+      
+      // Check if file exists
+      if (!await file.exists()) {
+        return {'success': false, 'message': 'Image file not found'};
+      }
+      
+      // Create multipart request
+      final uri = Uri.parse('${AppConfig.apiUrl}/api/users/upload-profile-image');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add the image file
+      final stream = http.ByteStream(file.openRead()..cast());
+      final length = await file.length();
+      
+      final multipartFile = http.MultipartFile(
+        'image',
+        stream,
+        length,
+        filename: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      
+      request.files.add(multipartFile);
+      
+      // Add authorization header if available
+      final authToken = await _httpClient.getAuthToken();
+      if (authToken != null) {
+        request.headers['Authorization'] = 'Bearer $authToken';
+      }
+      
+      // Send the request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final responseData = json.decode(response.body);
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final imageUrl = responseData['imageUrl'] ?? responseData['url'];
+        
+        if (imageUrl == null) {
+          return {
+            'success': false, 
+            'message': 'Invalid server response: missing image URL'
+          };
+        }
+        
+        // Update local user data with new image URL
+        final currentUser = await getUserData();
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(profileImageUrl: imageUrl);
+          await _saveUserData(updatedUser);
+        }
+        
+        return {
+          'success': true, 
+          'imageUrl': imageUrl,
+          'message': 'Profile image updated successfully'
+        };
+      } else {
+        return {
+          'success': false, 
+          'message': responseData['message'] ?? 
+                     responseData['error'] ?? 
+                     'Failed to update profile image. Status code: ${response.statusCode}'
+        };
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error updating profile image: $e');
+      debugPrint('Stack trace: $stackTrace');
+      return {
+        'success': false, 
+        'message': 'Error updating profile image: ${e.toString()}'
+      };
     }
   }
 

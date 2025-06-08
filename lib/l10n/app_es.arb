@@ -38,5 +38,13 @@
   "account": "Cuenta",
   "app": "Aplicación",
   "guest": "Invitado",
-  "guestEmail": "invitado@ejemplo.com"
+  "guestEmail": "invitado@ejemplo.com",
+  "profileImageUpdated": "Imagen de perfil actualizada correctamente",
+  "errorUpdatingImage": "Error al actualizar la imagen de perfil. Por favor, inténtalo de nuevo.",
+  "uploadingImage": "Subiendo imagen...",
+  "selectImageSource": "Seleccionar origen de la imagen",
+  "camera": "Cámara",
+  "gallery": "Galería",
+  "cancel": "Cancelar",
+  "retry": "Reintentar"
 }

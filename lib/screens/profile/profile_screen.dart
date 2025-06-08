@@ -1,16 +1,26 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:meditation_app_flutter/providers/auth_provider.dart';
 import 'package:meditation_app_flutter/providers/locale_provider.dart';
-import 'package:meditation_app_flutter/models/user_model.dart';
 import 'package:meditation_app_flutter/theme/app_theme.dart';
 import 'package:meditation_app_flutter/screens/profile/edit_profile/edit_profile_screen.dart';
 import 'package:meditation_app_flutter/screens/profile/change_password_screen.dart';
 import 'package:meditation_app_flutter/screens/profile/language_selection_screen.dart';
 import 'package:meditation_app_flutter/l10n/app_localizations.dart';
+import 'package:meditation_app_flutter/services/image_upload_service.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final ImageUploadService _imageUploadService = ImageUploadService();
+  bool _isUploading = false;
 
   @override
   Future<void> _handleLogout(BuildContext context) async {
@@ -40,12 +50,126 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
+
+  
+  Future<void> _pickAndUploadImage(BuildContext context) async {
+    if (_isUploading) return;
+    
+    if (!mounted) return;
+    
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    
+    try {
+      // Show image source selection
+      final file = await _imageUploadService.pickImageSource(context);
+      if (file == null || !mounted) return;
+      
+      setState(() => _isUploading = true);
+      
+      // Show uploading indicator
+      final loadingSnackBar = SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Text(l10n.uploadingImage),
+          ],
+        ),
+        duration: const Duration(seconds: 30), // Long duration to prevent premature dismissal
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      );
+      
+      // Show loading snackbar
+      scaffoldMessenger.removeCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(loadingSnackBar);
+      
+      // Upload the image
+      final authProvider = context.read<AuthProvider>();
+      final success = await authProvider.updateProfileImage(file.path);
+      
+      // Dismiss the loading snackbar
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        
+        // Show result
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? l10n.profileImageUpdated : l10n.errorUpdatingImage,
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: success ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      if (kDebugMode) {
+        print('Error in _pickAndUploadImage: $e');
+        print('Stack trace: $stackTrace');
+      }
+      
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              '${l10n.errorUpdatingImage} ${e.toString().split('.').first}',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            action: SnackBarAction(
+              label: l10n.retry,
+              textColor: Colors.white,
+              onPressed: () => _pickAndUploadImage(context),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    // Clean up any resources if needed
+    super.dispose();
+  }
+  
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final user = context.watch<AuthProvider>().user;
     final l10n = AppLocalizations.of(context)!;
+    final isGuest = user == null;
 
     return Scaffold(
       appBar: AppBar(
@@ -56,52 +180,86 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Profile Header
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Profile Picture
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: colorScheme.primary.withOpacity(0.1),
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        size: 60,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // User Name
-                    Text(
-                      user?.name ?? l10n.guest,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // User Email
-                    Text(
-                      user?.email ?? l10n.guestEmail,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+            const SizedBox(height: 20),
+            // Profile Image with Upload Button
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colorScheme.primary.withOpacity(0.1),
+                  ),
+                  child: (user?.profileImageUrl?.isNotEmpty ?? false)
+                      ? ClipOval(
+                          child: Image.network(
+                            user!.profileImageUrl!,
+                            width: 136,
+                            height: 136,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(colorScheme),
+                          ),
+                        )
+                      : _buildDefaultAvatar(colorScheme),
                 ),
+                if (!isGuest)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.camera_alt, size: 24, color: Colors.white),
+                        onPressed: () => _pickAndUploadImage(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // User Info
+            Text(
+              user?.name ?? l10n.guest,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              user?.email ?? l10n.guestEmail,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
             const SizedBox(height: 24),
             // Account Section
             Text(
@@ -248,6 +406,14 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+  
+  Widget _buildDefaultAvatar(ColorScheme colorScheme) {
+    return Icon(
+      Icons.account_circle,
+      size: 136,
+      color: colorScheme.primary.withOpacity(0.5),
     );
   }
 }

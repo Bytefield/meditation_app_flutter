@@ -3,6 +3,7 @@ class User {
   final String name;
   final String email;
   final bool isAdmin;
+  final String? profileImageUrl;
   final DateTime? emailVerifiedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -12,6 +13,7 @@ class User {
     required this.name,
     required this.email,
     this.isAdmin = false,
+    this.profileImageUrl,
     this.emailVerifiedAt,
     required this.createdAt,
     required this.updatedAt,
@@ -23,6 +25,7 @@ class User {
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       isAdmin: json['isAdmin'] ?? false,
+      profileImageUrl: json['profileImageUrl'],
       emailVerifiedAt: json['emailVerifiedAt'] != null 
           ? DateTime.parse(json['emailVerifiedAt']) 
           : null,
@@ -41,6 +44,7 @@ class User {
       'name': name,
       'email': email,
       'isAdmin': isAdmin,
+      'profileImageUrl': profileImageUrl,
       'emailVerifiedAt': emailVerifiedAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -52,6 +56,7 @@ class User {
     String? name,
     String? email,
     bool? isAdmin,
+    String? profileImageUrl,
     DateTime? emailVerifiedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -61,6 +66,7 @@ class User {
       name: name ?? this.name,
       email: email ?? this.email,
       isAdmin: isAdmin ?? this.isAdmin,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       emailVerifiedAt: emailVerifiedAt ?? this.emailVerifiedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

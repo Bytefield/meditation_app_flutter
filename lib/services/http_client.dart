@@ -41,6 +41,23 @@ class HttpClient {
     await _prefs.setString(_cookieKey, jsonEncode(_cookies));
   }
   
+  Map<String, String> get cookies => Map.unmodifiable(_cookies);
+  
+  /// Gets the authentication token from cookies
+  /// Returns the JWT token if available, or null if not found
+  Future<String?> getAuthToken() async {
+    // Check if we have a JWT token in cookies
+    final token = _cookies['token'] ?? _cookies['jwt'];
+    
+    if (token != null) {
+      return token;
+    }
+    
+    // If not in memory, try loading from storage
+    await _init();
+    return _cookies['token'] ?? _cookies['jwt'];
+  }
+  
   void _updateCookies(Map<String, String> headers) {
     if (kDebugMode) {
       print('HttpClient: Updating cookies from headers: $headers');
