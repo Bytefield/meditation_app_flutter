@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:meditation_app_flutter/l10n/app_localizations.dart';
 import 'package:meditation_app_flutter/providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 

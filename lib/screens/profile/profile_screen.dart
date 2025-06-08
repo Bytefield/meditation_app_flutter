@@ -7,7 +7,7 @@ import 'package:meditation_app_flutter/theme/app_theme.dart';
 import 'package:meditation_app_flutter/screens/profile/edit_profile/edit_profile_screen.dart';
 import 'package:meditation_app_flutter/screens/profile/change_password_screen.dart';
 import 'package:meditation_app_flutter/screens/profile/language_selection_screen.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:meditation_app_flutter/l10n/app_localizations.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -219,14 +219,6 @@ class ProfileScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.errorContainer,
-                  foregroundColor: colorScheme.onErrorContainer,
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                ),
                 onPressed: () => _handleLogout(context),
                 icon: const Icon(Icons.logout),
                 label: Text(l10n.logout),
@@ -237,6 +229,7 @@ class ProfileScreen extends StatelessWidget {
                     side: BorderSide(color: Colors.red.withOpacity(0.5)),
                   ),
                   backgroundColor: Colors.red.withOpacity(0.1),
+                  foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
                   elevation: 0,
                 ),
               ),

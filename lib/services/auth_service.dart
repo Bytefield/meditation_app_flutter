@@ -147,7 +147,7 @@ class AuthService {
   // Get current user
   Future<User?> getCurrentUser() async {
     try {
-      final response = await _httpClient.get('/api/auth/me');
+      final response = await _httpClient.get('/api/auth/profile');
 
       if (response.statusCode == 200) {
         final userData = jsonDecode(response.body);
@@ -166,7 +166,7 @@ class AuthService {
   // Check if user is authenticated
   Future<bool> isAuthenticated() async {
     try {
-      final response = await _httpClient.get('/api/auth/me');
+      final response = await _httpClient.get('/api/auth/profile');
       if (response.statusCode == 200) {
         // Update user data if needed
         final userData = jsonDecode(response.body);
@@ -195,7 +195,7 @@ class AuthService {
       }
 
       final response = await _httpClient.put(
-        '/api/auth/me',
+        '/api/auth/profile',
         body: body,
       );
 

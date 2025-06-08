@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:meditation_app_flutter/l10n/app_localizations.dart';
 import 'package:meditation_app_flutter/providers/auth_provider.dart';
 import 'package:meditation_app_flutter/theme/app_theme.dart';
 import 'package:meditation_app_flutter/widgets/custom_text_field.dart';
@@ -120,6 +120,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 8),
               CustomTextField(
+                label: AppLocalizations.of(context)!.currentPassword,
                 controller: _currentPasswordController,
                 hintText: 'Ingresa tu contraseña actual',
                 obscureText: _obscureCurrentPassword,
@@ -154,6 +155,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 8),
               CustomTextField(
+                label: AppLocalizations.of(context)!.newPassword,
                 controller: _newPasswordController,
                 hintText: 'Ingresa tu nueva contraseña',
                 obscureText: _obscureNewPassword,
@@ -188,6 +190,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               ),
               const SizedBox(height: 8),
               CustomTextField(
+                label: AppLocalizations.of(context)!.confirmPassword,
                 controller: _confirmPasswordController,
                 hintText: 'Confirma tu nueva contraseña',
                 obscureText: _obscureConfirmPassword,
