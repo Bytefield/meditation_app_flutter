@@ -47,40 +47,60 @@ class HttpClient {
     }
     
     // Handle 'set-cookie' header (case-insensitive)
-    final cookieHeader = headers.entries
-        .firstWhere(
-          (entry) => entry.key.toLowerCase() == 'set-cookie',
-          orElse: () => const MapEntry('', ''),
-        )
-        .value;
+    final cookieHeaders = headers.entries
+        .where((entry) => entry.key.toLowerCase() == 'set-cookie')
+        .map((e) => e.value)
+        .toList();
 
-    if (cookieHeader.isNotEmpty) {
-      if (kDebugMode) {
-        print('HttpClient: Found set-cookie header: $cookieHeader');
-      }
-      
-      // Split multiple cookies if present
-      final cookieStrings = cookieHeader.split(',');
-      
-      for (var cookieStr in cookieStrings) {
-        // Extract the cookie name and value (everything before the first '=')
-        final cookieParts = cookieStr.split(';')[0].split('=');
+    if (cookieHeaders.isNotEmpty) {
+      for (var cookieHeader in cookieHeaders) {
+        if (kDebugMode) {
+          print('HttpClient: Found set-cookie header: $cookieHeader');
+        }
         
-        if (cookieParts.length >= 2) {
-          final key = cookieParts[0].trim();
-          // Join the rest in case the cookie value contains '='
-          final value = cookieParts.sublist(1).join('=').trim();
-          
-          if (key.isNotEmpty) {
-            if (kDebugMode) {
-              print('HttpClient: Setting cookie: $key=$value');
+        // Split multiple cookies if present (handle comma-separated cookies)
+        final cookieStrings = [];
+        var currentCookie = '';
+        
+        for (var part in cookieHeader.split(',')) {
+          if (part.trim().startsWith(RegExp(r'[^=]+='))) {
+            if (currentCookie.isNotEmpty) {
+              cookieStrings.add(currentCookie.trim());
             }
-            _cookies[key] = value;
+            currentCookie = part;
+          } else {
+            currentCookie += ',$part';
+          }
+        }
+        
+        if (currentCookie.isNotEmpty) {
+          cookieStrings.add(currentCookie.trim());
+        }
+        
+        for (var cookieStr in cookieStrings) {
+          // Extract the cookie name and value (everything before the first ';')
+          final cookieParts = cookieStr.split(';')[0].split('=');
+          
+          if (cookieParts.length >= 2) {
+            final key = cookieParts[0].trim();
+            // Join the rest in case the cookie value contains '='
+            final value = cookieParts.sublist(1).join('=').trim();
+            
+            if (key.isNotEmpty) {
+              if (kDebugMode) {
+                print('HttpClient: Setting cookie: $key=$value');
+              }
+              _cookies[key] = value;
+            }
           }
         }
       }
       
       _saveCookies();
+      
+      if (kDebugMode) {
+        print('HttpClient: Updated cookies: $_cookies');
+      }
     } else if (kDebugMode) {
       print('HttpClient: No set-cookie header found in response');
     }
@@ -94,12 +114,40 @@ class HttpClient {
       final cookieString = _cookies.entries
           .map((e) => '${e.key}=${e.value}')
           .join('; ');
-      requestHeaders['Cookie'] = cookieString;
+          
+      // Ensure we're not adding an empty cookie header
+      if (cookieString.isNotEmpty) {
+        requestHeaders['Cookie'] = cookieString;
+        
+        if (kDebugMode) {
+          print('HttpClient: Adding cookies to request: $cookieString');
+        }
+      } else if (kDebugMode) {
+        print('HttpClient: Cookie string is empty, not adding to headers');
+      }
+    } else if (kDebugMode) {
+      print('HttpClient: No cookies available for request');
     }
     
     // Add custom headers
     if (headers != null) {
+      // Don't override existing headers with null values
+      headers.removeWhere((key, value) => value == null);
       requestHeaders.addAll(headers);
+    }
+    
+    // Ensure we have a valid content type
+    if (!requestHeaders.containsKey('Content-Type')) {
+      requestHeaders['Content-Type'] = 'application/json';
+    }
+    
+    // Add Accept header if not present
+    if (!requestHeaders.containsKey('Accept')) {
+      requestHeaders['Accept'] = 'application/json';
+    }
+    
+    if (kDebugMode) {
+      print('HttpClient: Final request headers: $requestHeaders');
     }
     
     return requestHeaders;

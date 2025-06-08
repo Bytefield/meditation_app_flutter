@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:meditation_app_flutter/l10n/app_localizations.dart';
 
 import 'package:meditation_app_flutter/providers/auth_provider.dart';
+import 'package:meditation_app_flutter/providers/locale_provider.dart';
 import 'package:meditation_app_flutter/screens/splash_screen.dart';
 import 'package:meditation_app_flutter/theme/app_theme.dart';
 import 'package:meditation_app_flutter/screens/auth/login_screen.dart';
@@ -24,6 +27,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
       child: const MeditationApp(),
     ),
@@ -35,10 +39,28 @@ class MeditationApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeProvider = Provider.of<LocaleProvider>(context);
+    
     return MaterialApp(
       title: 'Rago Meditation',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
+      locale: localeProvider.locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es'), // Spanish
+        Locale('en'), // English
+        // Note: French, German, Italian, and Portuguese are commented out as translations are not yet available
+        // Locale('fr'), // French
+        // Locale('de'), // German
+        // Locale('it'), // Italian
+        // Locale('pt'), // Portuguese
+      ],
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),

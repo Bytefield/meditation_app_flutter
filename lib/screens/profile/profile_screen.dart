@@ -1,21 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:meditation_app_flutter/providers/auth_provider.dart';
+import 'package:meditation_app_flutter/providers/locale_provider.dart';
 import 'package:meditation_app_flutter/models/user_model.dart';
 import 'package:meditation_app_flutter/theme/app_theme.dart';
+import 'package:meditation_app_flutter/screens/profile/edit_profile/edit_profile_screen.dart';
+import 'package:meditation_app_flutter/screens/profile/change_password_screen.dart';
+import 'package:meditation_app_flutter/screens/profile/language_selection_screen.dart';
+import 'package:meditation_app_flutter/l10n/app_localizations.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
+
+  @override
+  Future<void> _handleLogout(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.logout),
+        content: Text(l10n.logoutConfirmation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.logout),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      if (context.mounted) {
+        await context.read<AuthProvider>().logout();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final user = context.watch<AuthProvider>().user;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi Perfil'),
+        title: Text(l10n.profile),
         centerTitle: true,
         elevation: 0,
       ),
@@ -51,7 +85,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     // User Name
                     Text(
-                      user?.name ?? 'Usuario',
+                      user?.name ?? l10n.guest,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -59,7 +93,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     // User Email
                     Text(
-                      user?.email ?? 'usuario@ejemplo.com',
+                      user?.email ?? l10n.guestEmail,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -71,7 +105,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 24),
             // Account Section
             Text(
-              'Cuenta',
+              l10n.account,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -86,19 +120,27 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.edit),
-                    title: const Text('Editar perfil'),
+                    title: Text(l10n.editProfile),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // TODO: Implement edit profile
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const EditProfileScreen(),
+                        ),
+                      );
                     },
                   ),
                   const Divider(height: 1, indent: 56),
                   ListTile(
                     leading: const Icon(Icons.lock_outline),
-                    title: const Text('Cambiar contraseña'),
+                    title: Text(l10n.changePassword),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
-                      // TODO: Implement change password
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ChangePasswordScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -107,7 +149,7 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 24),
             // App Section
             Text(
-              'Aplicación',
+              l10n.app,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -122,7 +164,7 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.notifications_outlined),
-                    title: const Text('Notificaciones'),
+                    title: Text(l10n.notifications),
                     trailing: Switch(
                       value: true,
                       onChanged: (value) {
@@ -133,22 +175,41 @@ class ProfileScreen extends StatelessWidget {
                   const Divider(height: 1, indent: 56),
                   ListTile(
                     leading: const Icon(Icons.language),
-                    title: const Text('Idioma'),
+                    title: Text(l10n.language),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Español',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        Consumer<LocaleProvider>(
+                          builder: (context, localeProvider, _) {
+                            // Only show supported languages (English and Spanish)
+                            final languageCode = localeProvider.locale.languageCode;
+                            String languageName;
+                            
+                            if (languageCode == 'es') {
+                              languageName = l10n.spanish;
+                            } else {
+                              // Default to English if the language is not Spanish
+                              languageName = l10n.english;
+                            }
+                            
+                            return Text(
+                              languageName,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(width: 4),
                         const Icon(Icons.chevron_right),
                       ],
                     ),
                     onTap: () {
-                      // TODO: Implement language selection
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LanguageSelectionScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -159,41 +220,9 @@ class ProfileScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: ElevatedButton.icon(
-                onPressed: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Cerrar sesión'),
-                      content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Cancelar'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Cerrar sesión', 
-                            style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirmed == true) {
-                    await context.read<AuthProvider>().logout();
-                    if (context.mounted) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/login',
-                        (route) => false,
-                      );
-                    }
-                  }
-                },
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text(
-                  'Cerrar sesión',
-                  style: TextStyle(color: Colors.red),
-                ),
+                onPressed: () => _handleLogout(context),
+                icon: const Icon(Icons.logout),
+                label: Text(l10n.logout),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -201,6 +230,7 @@ class ProfileScreen extends StatelessWidget {
                     side: BorderSide(color: Colors.red.withOpacity(0.5)),
                   ),
                   backgroundColor: Colors.red.withOpacity(0.1),
+                  foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
                   elevation: 0,
                 ),
               ),
