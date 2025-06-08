@@ -1,37 +1,53 @@
-# MeditApp - Aplicación de Meditación Personalizada
+# Rago Meditation App
 
-![Banner de MeditApp](assets/images/app_banner.png)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Flutter](https://img.shields.io/badge/Flutter-3.19.0-blue.svg)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-3.3.0-blue.svg)](https://dart.dev/)
 
-Aplicación móvil para sesiones de meditación personalizadas según el estado de ánimo del usuario.
+Aplicación móvil de meditación personalizada que se adapta al estado de ánimo del usuario, ofreciendo una experiencia de meditación única y personalizada.
 
-## 🚀 Características
+## 📱 Características Principales
 
-- **Autenticación segura** con JWT y cookies HTTP-Only
-- **Gestión de perfiles de usuario**
-- **Selección de estados de ánimo** para personalizar la experiencia
-- **Sesiones de meditación** adaptadas a cada emoción
-- **Seguimiento de progreso** y estadísticas
-- **Diseño moderno** con Material Design 3 y tema oscuro/claro
+### Autenticación y Perfil
+- Registro e inicio de sesión seguro con JWT
+- Perfil de usuario personalizable
+- Cierre de sesión seguro
+
+### Personalización
+- Selección de estados de ánimo
+- Interfaz adaptativa al modo claro/oscuro
+- Preferencias de notificaciones
+
+### Meditación
+- Sesiones adaptadas al estado de ánimo
+- Seguimiento de progreso
+- Historial de sesiones
+
+### Seguridad
+- Autenticación con JWT y cookies HTTP-Only
+- Validación de formularios
+- Manejo seguro de credenciales
 
 ## 🛠️ Stack Tecnológico
 
 ### Frontend (App Móvil)
-- **Framework**: Flutter (Dart)
-- **Gestión de Estado**: Provider
-- **Navegación**: GoRouter
-- **HTTP Client**: http con interceptores
-- **Almacenamiento Local**: shared_preferences
-- **Reproducción de Audio**: just_audio
-- **Formularios**: FormBuilder
-- **Estilos**: Material Design 3 con tema personalizado
+- **Framework**: [Flutter 3.19.0](https://flutter.dev/) (Dart 3.3.0)
+- **Gestión de Estado**: [Provider](https://pub.dev/packages/provider)
+- **Navegación**: [GoRouter](https://pub.dev/packages/go_router)
+- **HTTP Client**: [Dio](https://pub.dev/packages/dio) con interceptores
+- **Almacenamiento Local**: [shared_preferences](https://pub.dev/packages/shared_preferences)
+- **Formularios**: [flutter_form_builder](https://pub.dev/packages/flutter_form_builder)
+- **UI**: [Material Design 3](https://m3.material.io/)
+- **Testing**: [flutter_test](https://api.flutter.dev/flutter/flutter_test/flutter_test-library.html), [mockito](https://pub.dev/packages/mockito)
 
 ### Backend (API REST)
-- **Lenguaje**: Node.js con Express
-- **Base de Datos**: MongoDB con Mongoose
-- **Autenticación**: JWT con cookies HTTP-Only
-- **Seguridad**: Bcrypt, CORS, Helmet, Rate Limiting
-- **Validación**: Express Validator
-- **Logging**: Morgan y Winston
+- **Runtime**: [Node.js 18+](https://nodejs.org/)
+- **Framework**: [Express.js](https://expressjs.com/)
+- **Base de Datos**: [MongoDB](https://www.mongodb.com/) con [Mongoose](https://mongoosejs.com/)
+- **Autenticación**: [JWT](https://jwt.io/) con cookies HTTP-Only
+- **Seguridad**: [bcrypt](https://www.npmjs.com/package/bcrypt), [helmet](https://helmetjs.github.io/), [cors](https://www.npmjs.com/package/cors)
+- **Validación**: [express-validator](https://express-validator.github.io/)
+- **Logging**: [winston](https://github.com/winstonjs/winston)
 
 ## 📱 Pantallas Principales
 
@@ -82,23 +98,121 @@ class MoodEntry {
 ## 🚀 Empezando
 
 ### Requisitos Previos
-- Flutter SDK (última versión estable)
-- Node.js 16+ y npm
-- MongoDB (local o Atlas)
-- Un dispositivo físico o emulador
 
-### Instalación
+#### Para Desarrollo
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) (3.19.0 o superior)
+- [Dart SDK](https://dart.dev/get-dart) (3.3.0 o superior)
+- [Node.js](https://nodejs.org/) (18.x LTS o superior)
+- [npm](https://www.npmjs.com/) (9.x o superior) o [Yarn](https://yarnpkg.com/)
+- [MongoDB](https://www.mongodb.com/try/download/community) (6.0 o superior) o [MongoDB Atlas](https://www.mongodb.com/atlas/database)
+- Un emulador o dispositivo físico para pruebas
+
+#### Para Producción
+- Servidor con Node.js 18.x
+- Base de datos MongoDB (autogestionada o MongoDB Atlas)
+- Servidor web (Nginx, Apache) para servir la aplicación compilada
+- Certificado SSL (recomendado)
+
+### 🛠️ Instalación
 
 1. **Clonar el repositorio**
    ```bash
-   git clone https://github.com/tu-usuario/meditacion-app.git
-   cd meditacion-app
+   # Clonar el repositorio
+   git clone https://github.com/Bytefield/meditation_app_flutter.git
+   cd meditation_app_flutter
    ```
 
-2. **Configurar el backend**
+2. **Configuración del Entorno**
    ```bash
-   cd meditacion_app_server
+   # Copiar archivo de configuración de ejemplo
    cp .env.example .env
+   ```
+   
+   Editar el archivo `.env` con tus configuraciones:
+   ```env
+   # Configuración de la API
+   API_BASE_URL=http://localhost:3000
+   
+   # Configuración de Firebase (opcional)
+   FIREBASE_API_KEY=your_api_key
+   FIREBASE_AUTH_DOMAIN=your_auth_domain
+   FIREBASE_PROJECT_ID=your_project_id
+   ```
+
+3. **Instalar Dependencias**
+   ```bash
+   # Instalar dependencias de Flutter
+   flutter pub get
+   
+   # Instalar dependencias del backend
+   cd ../meditation_app_server
+   npm install
+   ```
+
+4. **Configurar Base de Datos**
+   - Asegúrate de tener MongoDB en ejecución
+   - Configura la conexión en `meditation_app_server/.env`
+
+5. **Ejecutar la Aplicación**
+   ```bash
+   # Iniciar el servidor de desarrollo de Flutter
+   flutter run
+   
+   # En otra terminal, iniciar el servidor backend
+   cd meditation_app_server
+   npm run dev
+   ```
+
+## 🧪 Testing
+
+### Ejecutar Pruebas Unitarias
+```bash
+# Ejecutar todas las pruebas
+flutter test
+
+# Ejecutar pruebas con cobertura
+flutter test --coverage
+```
+
+### Ejecutar Pruebas de Integración
+```bash
+flutter test integration_test/
+```
+
+## 🏗️ Estructura del Proyecto
+
+```
+lib/
+├── config/              # Configuraciones de la aplicación
+├── models/              # Modelos de datos
+├── providers/           # Proveedores de estado (Provider)
+├── screens/            # Pantallas de la aplicación
+│   ├── auth/           # Flujos de autenticación
+│   ├── home/           # Pantalla principal
+│   └── profile/        # Gestión de perfil
+├── services/           # Servicios (API, almacenamiento, etc.)
+├── theme/              # Temas y estilos
+├── utils/              # Utilidades y helpers
+└── widgets/            # Componentes reutilizables
+```
+
+## 🤝 Contribuir
+
+1. Haz un fork del proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Haz commit de tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Haz push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## 📄 Licencia
+
+Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 📞 Contacto
+
+Tu Nombre - [@tu_twitter](https://twitter.com/tu_twitter) - tu.email@ejemplo.com
+
+Enlace del Proyecto: [https://github.com/Bytefield/meditation_app_flutter](https://github.com/Bytefield/meditation_app_flutter)
    # Editar .env con tus configuraciones
    npm install
    npm run dev
