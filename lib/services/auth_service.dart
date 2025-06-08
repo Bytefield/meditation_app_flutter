@@ -178,4 +178,92 @@ class AuthService {
       return false;
     }
   }
+
+  // Update user profile
+  Future<Map<String, dynamic>> updateProfile(String name, String email, {String? currentPassword, String? newPassword}) async {
+    try {
+      final Map<String, dynamic> body = {
+        'name': name,
+        'email': email,
+      };
+
+      // Only include password fields if they are provided
+      if (currentPassword != null && currentPassword.isNotEmpty && 
+          newPassword != null && newPassword.isNotEmpty) {
+        body['current_password'] = currentPassword;
+        body['new_password'] = newPassword;
+      }
+
+      final response = await _httpClient.put(
+        '/api/auth/me',
+        body: body,
+      );
+
+      final data = jsonDecode(response.body);
+      
+      if (response.statusCode == 200) {
+        final user = User.fromJson(data);
+        await _saveUserData(user);
+        return {
+          'success': true, 
+          'user': user,
+          'message': 'Profile updated successfully',
+        };
+      } else {
+        return {
+          'success': false, 
+          'message': data['message'] ?? 'Failed to update profile',
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('AuthService - updateProfile error: $e');
+      }
+      return {
+        'success': false,
+        'message': 'Failed to update profile. Please try again.',
+      };
+    }
+  }
+
+  // Change user password
+  Future<Map<String, dynamic>> changePassword(String currentPassword, String newPassword) async {
+    try {
+      final response = await _httpClient.put(
+        '/api/auth/change-password',
+        body: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      
+      if (response.statusCode == 200) {
+        // Update the user data if the response includes it
+        if (data['user'] != null) {
+          final user = User.fromJson(data['user']);
+          await _saveUserData(user);
+        }
+        
+        return {
+          'success': true, 
+          'message': data['message'] ?? 'Password changed successfully',
+        };
+      } else {
+        return {
+          'success': false, 
+          'message': data['message'] ?? 'Failed to change password',
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('AuthService - changePassword error: $e');
+      }
+      return {
+        'success': false,
+        'message': 'Failed to change password. Please try again.',
+      };
+    }
+  }
 }

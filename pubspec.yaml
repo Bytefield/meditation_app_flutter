@@ -44,17 +44,24 @@ dependencies:
   # HTTP & API
   http: ^1.4.0
   
+  # Localization
+  intl: ^0.20.2
+  flutter_localizations:
+    sdk: flutter
+  
   # UI
   flutter_svg: ^2.1.0
   google_fonts: ^6.2.1
   lottie: ^3.3.1
   cupertino_icons: ^1.0.8
   
-  # Form Validation
+  # Form validation
   form_validator: ^2.1.1
   
+  # File picking
+  image_picker: ^1.0.7
+  
   # Utils
-  intl: ^0.19.0
   logger: ^2.0.2
   flutter_secure_storage: ^9.0.2
   http_auth: ^1.0.2
@@ -75,7 +82,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
+  generate: true
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

@@ -187,4 +187,92 @@ class AuthProvider with ChangeNotifier {
     // If you need to store and retrieve a token separately, implement this
     return null;
   }
+  
+  // Update user profile
+  Future<Map<String, dynamic>> updateProfile(String name, String email, {String? currentPassword, String? newPassword}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await _authService.updateProfile(
+        name, 
+        email,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      
+      _isLoading = false;
+      
+      if (result['success'] == true) {
+        _user = result['user'];
+        notifyListeners();
+        return {
+          'success': true,
+          'message': result['message'] ?? 'Profile updated successfully',
+        };
+      } else {
+        _error = result['message'] ?? 'Failed to update profile';
+        notifyListeners();
+        return {
+          'success': false,
+          'message': _error,
+        };
+      }
+    } catch (e) {
+      _isLoading = false;
+      _error = 'Failed to update profile. Please try again.';
+      if (kDebugMode) {
+        print('AuthProvider - updateProfile error: $e');
+      }
+      notifyListeners();
+      return {
+        'success': false,
+        'message': _error,
+      };
+    }
+  }
+  
+  // Change user password
+  Future<Map<String, dynamic>> changePassword(String currentPassword, String newPassword) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final result = await _authService.changePassword(currentPassword, newPassword);
+      
+      _isLoading = false;
+      
+      if (result['success'] == true) {
+        // If the API returns the updated user, update it
+        if (result['user'] != null) {
+          _user = result['user'];
+        }
+        notifyListeners();
+        return {
+          'success': true,
+          'message': result['message'] ?? 'Password changed successfully',
+        };
+      } else {
+        _error = result['message'] ?? 'Failed to change password';
+        notifyListeners();
+        return {
+          'success': false,
+          'message': _error,
+        };
+      }
+    } catch (e) {
+      _isLoading = false;
+      _error = 'Failed to change password. Please try again.';
+      if (kDebugMode) {
+        print('AuthProvider - changePassword error: $e');
+      }
+      notifyListeners();
+      return {
+        'success': false,
+        'message': _error,
+      };
+    }
+  }
 }
