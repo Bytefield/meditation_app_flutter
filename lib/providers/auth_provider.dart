@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:meditation_app_flutter/models/user_model.dart';
@@ -169,15 +171,38 @@ class AuthProvider with ChangeNotifier {
   // Logout user
   Future<void> logout() async {
     try {
-      await _authService.logout();
-      _user = null;
-      _isInitialized = true;
-      notifyListeners();
-    } catch (e) {
-      _error = 'Logout failed. Please try again.';
       if (kDebugMode) {
-        print('AuthProvider - logout error: $e');
+        print('AuthProvider: Starting logout process');
       }
+      
+      // Clear user data from provider
+      _user = null;
+      _isLoading = false;
+      _isInitialized = true;
+      _error = null;
+      
+      // Notify listeners before clearing auth data
+      notifyListeners();
+      
+      // Clear auth data from service (including cookies and cache)
+      await _authService.logout();
+      
+      if (kDebugMode) {
+        print('AuthProvider: Logout completed successfully');
+      }
+    } catch (e, stackTrace) {
+      _error = 'Logout failed. Please try again.';
+      _isLoading = false;
+      
+      if (kDebugMode) {
+        print('AuthProvider: Error during logout: $e');
+        print('Stack trace: $stackTrace');
+      }
+      
+      // Still notify listeners to update UI
+      notifyListeners();
+      
+      // Rethrow to allow UI to handle the error if needed
       rethrow;
     }
   }
@@ -200,41 +225,78 @@ class AuthProvider with ChangeNotifier {
   /// Updates the user's profile image
   /// Returns true if the update was successful, false otherwise
   Future<bool> updateProfileImage(String imagePath) async {
-    if (_isLoading) return false;
+    if (_isLoading) {
+      debugPrint('Profile image upload already in progress');
+      return false;
+    }
     
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
+      debugPrint('Starting profile image upload...');
       final result = await _authService.updateProfileImage(imagePath);
       
       if (result['success'] == true && result['imageUrl'] != null) {
+        final imageUrl = result['imageUrl'];
+        debugPrint('Profile image upload successful. Image URL: $imageUrl');
+        
         // Update the current user with the new image URL
         if (_user != null) {
-          _user = _user!.copyWith(profileImageUrl: result['imageUrl']);
+          _user = _user!.copyWith(profileImageUrl: imageUrl);
+          debugPrint('Updated local user with new profile image URL');
           notifyListeners();
           return true;
         }
-        _error = 'User not found';
+        
+        _error = 'User not found in local storage';
+        debugPrint(_error!);
         return false;
       } else {
-        _error = result['message'] ?? 'Failed to update profile image';
-        if (kDebugMode) {
-          print('Error updating profile image: ${result['message']}');
+        // Handle specific error cases
+        final errorMessage = result['message'] ?? 'Failed to update profile image';
+        final statusCode = result['statusCode'];
+        
+        if (statusCode != null) {
+          if (statusCode == 401) {
+            _error = 'Session expired. Please log in again.';
+          } else if (statusCode >= 500) {
+            _error = 'Server error. Please try again later.';
+          } else if (statusCode == 413) {
+            _error = 'Image file is too large. Please select a smaller image.';
+          } else {
+            _error = errorMessage;
+          }
+        } else {
+          _error = errorMessage;
         }
+        
+        debugPrint('Error updating profile image: $_error (Status: $statusCode)');
         return false;
       }
+    } on TimeoutException catch (e) {
+      _error = 'Request timed out. Please check your internet connection and try again.';
+      debugPrint('Profile image upload timeout: $e');
+      return false;
+    } on SocketException catch (e) {
+      _error = 'Network error. Please check your internet connection.';
+      debugPrint('Network error during profile image upload: $e');
+      return false;
     } catch (e, stackTrace) {
-      _error = 'Error updating profile image: ${e.toString().split('.').first}';
-      if (kDebugMode) {
-        print('Error updating profile image: $e');
-        print('Stack trace: $stackTrace');
-      }
+      _error = 'An unexpected error occurred. Please try again.';
+      debugPrint('Unexpected error updating profile image: $e');
+      debugPrint('Stack trace: $stackTrace');
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
+      
+      if (_error != null) {
+        debugPrint('Final error state: $_error');
+      } else {
+        debugPrint('Profile image update completed successfully');
+      }
     }
   }
   

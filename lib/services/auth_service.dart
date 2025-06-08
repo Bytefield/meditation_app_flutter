@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:meditation_app_flutter/models/user_model.dart';
 import 'package:meditation_app_flutter/config/config.dart';
@@ -30,9 +32,32 @@ class AuthService {
 
   // Clear auth data (logout)
   Future<void> clearAuthData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
-    await _httpClient.clearCookies();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Clear user data
+      await prefs.remove(_userKey);
+      
+      // Clear any cached profile images
+      final userDir = await getApplicationDocumentsDirectory();
+      final profileImageDir = Directory('${userDir.path}/profile_images');
+      
+      if (await profileImageDir.exists()) {
+        await profileImageDir.delete(recursive: true);
+      }
+      
+      // Clear HTTP client cookies
+      await _httpClient.clearCookies();
+      
+      if (kDebugMode) {
+        print('AuthService: Cleared all user data and cache');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error clearing auth data: $e');
+      }
+      rethrow;
+    }
   }
 
   // Register a new user
@@ -138,12 +163,52 @@ class AuthService {
 
   // Logout user
   Future<void> logout() async {
+    if (kDebugMode) {
+      print('AuthService: Starting logout process');
+    }
+    
     try {
-      await _httpClient.post('/api/auth/logout');
-    } catch (e) {
-      // Ignore errors during logout
-    } finally {
+      // Try to notify the server about logout
+      try {
+        await _httpClient.post('/api/auth/logout').timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {
+            if (kDebugMode) {
+              print('AuthService: Logout request timed out, continuing with local cleanup');
+            }
+            return http.Response('{}', 200);
+          },
+        );
+      } catch (e) {
+        // Log but don't fail if server logout fails
+        if (kDebugMode) {
+          print('AuthService: Error during server logout (continuing): $e');
+        }
+      }
+      
+      // Always clear local data, even if server logout fails
       await clearAuthData();
+      
+      if (kDebugMode) {
+        print('AuthService: Logout completed successfully');
+      }
+    } catch (e, stackTrace) {
+      // Make sure we still clear auth data even if there's an error
+      if (kDebugMode) {
+        print('AuthService: Error during logout: $e');
+        print('Stack trace: $stackTrace');
+      }
+      
+      // Try to clear auth data even if something went wrong
+      try {
+        await clearAuthData();
+      } catch (e) {
+        if (kDebugMode) {
+          print('AuthService: Error during clearAuthData: $e');
+        }
+      }
+      
+      rethrow;
     }
   }
 
@@ -175,73 +240,139 @@ class AuthService {
       
       // Check if file exists
       if (!await file.exists()) {
+        debugPrint('Profile image file not found at path: $imagePath');
         return {'success': false, 'message': 'Image file not found'};
+      }
+      
+      // Check file size (max 5MB)
+      final fileSize = await file.length();
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      
+      if (fileSize > maxSize) {
+        debugPrint('Image file size ($fileSize bytes) exceeds maximum allowed size ($maxSize bytes)');
+        return {
+          'success': false,
+          'message': 'Image size should be less than 5MB',
+        };
       }
       
       // Create multipart request
       final uri = Uri.parse('${AppConfig.apiUrl}/api/users/upload-profile-image');
+      debugPrint('Uploading profile image to: $uri');
+      
       final request = http.MultipartRequest('POST', uri);
       
-      // Add the image file
-      final stream = http.ByteStream(file.openRead()..cast());
-      final length = await file.length();
-      
-      final multipartFile = http.MultipartFile(
-        'image',
-        stream,
-        length,
-        filename: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
-      );
-      
-      request.files.add(multipartFile);
-      
-      // Add authorization header if available
-      final authToken = await _httpClient.getAuthToken();
-      if (authToken != null) {
-        request.headers['Authorization'] = 'Bearer $authToken';
-      }
-      
-      // Send the request
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-      final responseData = json.decode(response.body);
-      
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final imageUrl = responseData['imageUrl'] ?? responseData['url'];
+      try {
+        // Add the image file
+        final stream = http.ByteStream(file.openRead()..cast());
+        final length = fileSize;
         
-        if (imageUrl == null) {
+        final multipartFile = http.MultipartFile(
+          'image',
+          stream,
+          length,
+          filename: 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        );
+        
+        request.files.add(multipartFile);
+        
+        // Add authorization header if available
+        final authToken = await _httpClient.getAuthToken();
+        if (authToken != null) {
+          request.headers['Authorization'] = 'Bearer $authToken';
+          debugPrint('Added authorization header');
+        } else {
+          debugPrint('No auth token available');
+        }
+        
+        // Send the request with timeout
+        debugPrint('Sending profile image upload request...');
+        final streamedResponse = await request.send().timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            debugPrint('Profile image upload timed out after 30 seconds');
+            throw TimeoutException('Image upload timed out');
+          },
+        );
+        
+        final response = await http.Response.fromStream(streamedResponse);
+        debugPrint('Response status code: ${response.statusCode}');
+        debugPrint('Response body: ${response.body}');
+        
+        // Parse response data
+        Map<String, dynamic> responseData;
+        try {
+          responseData = json.decode(response.body) as Map<String, dynamic>;
+        } catch (e) {
+          debugPrint('Failed to parse response JSON: $e');
           return {
-            'success': false, 
-            'message': 'Invalid server response: missing image URL'
+            'success': false,
+            'message': 'Invalid server response format',
           };
         }
         
-        // Update local user data with new image URL
-        final currentUser = await getUserData();
-        if (currentUser != null) {
-          final updatedUser = currentUser.copyWith(profileImageUrl: imageUrl);
-          await _saveUserData(updatedUser);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final imageUrl = responseData['imageUrl'] ?? responseData['url'];
+          
+          if (imageUrl == null) {
+            debugPrint('No imageUrl in successful response');
+            return {
+              'success': false, 
+              'message': 'Invalid server response: missing image URL'
+            };
+          }
+          
+          // Update local user data with new image URL
+          try {
+            final currentUser = await getUserData();
+            if (currentUser != null) {
+              final updatedUser = currentUser.copyWith(profileImageUrl: imageUrl);
+              await _saveUserData(updatedUser);
+              debugPrint('Successfully updated local user data with new image URL');
+            } else {
+              debugPrint('No current user data found to update');
+            }
+            
+            return {
+              'success': true, 
+              'imageUrl': imageUrl,
+              'message': 'Profile image updated successfully'
+            };
+          } catch (e) {
+            debugPrint('Error updating local user data: $e');
+            // Still return success if the server updated successfully
+            return {
+              'success': true, 
+              'imageUrl': imageUrl,
+              'message': 'Profile image updated, but local data could not be updated'
+            };
+          }
+        } else {
+          final errorMsg = responseData['message'] ?? 
+                         responseData['error'] ?? 
+                         'Failed to update profile image (Status: ${response.statusCode})';
+          debugPrint('Server error: $errorMsg');
+          return {
+            'success': false, 
+            'message': errorMsg,
+            'statusCode': response.statusCode,
+          };
         }
-        
-        return {
-          'success': true, 
-          'imageUrl': imageUrl,
-          'message': 'Profile image updated successfully'
-        };
-      } else {
+      } catch (e, stackTrace) {
+        debugPrint('Error updating profile image: $e');
+        debugPrint('Stack trace: $stackTrace');
         return {
           'success': false, 
-          'message': responseData['message'] ?? 
-                     responseData['error'] ?? 
-                     'Failed to update profile image. Status code: ${response.statusCode}'
+          'message': 'Error updating profile image: ${e.toString()}'
         };
       }
     } catch (e, stackTrace) {
-      debugPrint('Error updating profile image: $e');
+      debugPrint('Unexpected error in updateProfileImage: $e');
       debugPrint('Stack trace: $stackTrace');
       return {
-        'success': false, 
-        'message': 'Error updating profile image: ${e.toString()}'
+        'success': false,
+        'message': 'An unexpected error occurred: ${e.toString()}'
       };
     }
   }
